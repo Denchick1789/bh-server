@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BoecSMP | Сервер Minecraft</title>
-    <meta name="description" content="Официальный сайт BoecSMP. Реферальная система, промокоды и донат.">
+    <meta name="description" content="Официальный сайт BoecSMP. Новости, галерея, реферальная система и донат.">
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,7 +21,8 @@
         <div class="container nav-wrapper">
             <a href="#" class="logo">Boec<span>SMP</span></a>
             <nav class="nav-links">
-                <a href="#about">О сервере</a>
+                <a href="#news">Новости</a>
+                <a href="#gallery">Галерея</a>
                 <a href="#donate">Донат</a>
                 <a href="#referral">Рефералка</a>
                 <a href="https://discord.gg/rWPRvbBJHR" target="_blank">Discord</a>
@@ -45,6 +46,33 @@
         </div>
     </section>
 
+    <!-- НОВОСТИ -->
+    <section class="news-section" id="news">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Последние <span>новости</span></h2>
+                <button class="btn btn-small" onclick="openNewsModal()" id="addNewsBtn" style="display: none;">+ Добавить новость</button>
+            </div>
+            <div class="news-grid" id="newsGrid">
+                <p style="color: var(--text-secondary); text-align: center; grid-column: 1/-1;">Загрузка новостей...</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ГАЛЕРЕЯ -->
+    <section class="gallery-section" id="gallery">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Галерея <span>сервера</span></h2>
+                <button class="btn btn-small" onclick="openGalleryModal()" id="addGalleryBtn" style="display: none;">+ Добавить фото</button>
+            </div>
+            <div class="gallery-grid" id="galleryGrid">
+                <p style="color: var(--text-secondary); text-align: center; grid-column: 1/-1;">Загрузка галереи...</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ДОНАТ -->
     <section class="donate-section container" id="donate">
         <h2 class="section-title">Привилегия <span>VIP</span></h2>
         
@@ -61,6 +89,7 @@
         </div>
     </section>
 
+    <!-- РЕФЕРАЛКА -->
     <section class="referral-section" id="referral">
         <div class="container">
             <h2 class="section-title">Реферальная <span>программа</span></h2>
@@ -137,6 +166,7 @@
         </div>
     </footer>
 
+    <!-- МОДАЛКА ВХОДА -->
     <div id="authModal" class="modal">
         <div class="modal-content auth-modal">
             <div class="modal-header">
@@ -144,9 +174,6 @@
                 <button class="close-modal" onclick="closeAuthModal()">&times;</button>
             </div>
             <div class="modal-body">
-                <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.9rem;">
-                    Мы используем Google только для безопасного входа.
-                </p>
                 <button class="btn google-btn" onclick="signInWithGoogle()">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 10px;">
                         <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -160,6 +187,7 @@
         </div>
     </div>
 
+    <!-- МОДАЛКА НАСТРОЙКИ ПРОФИЛЯ -->
     <div id="setupProfileModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -181,6 +209,72 @@
                 </div>
                 <button class="btn" onclick="saveCustomProfile()" style="width: 100%; margin-top: 1rem;">Сохранить</button>
                 <p id="setupError" style="color: var(--error); margin-top: 1rem; font-size: 0.9rem; text-align: center; display: none;"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛКА ДОБАВЛЕНИЯ НОВОСТИ -->
+    <div id="newsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Добавить новость</h3>
+                <button class="close-modal" onclick="closeNewsModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Заголовок</label>
+                    <input type="text" id="newsTitle" placeholder="Например: Обновление 1.21.11" maxlength="100">
+                </div>
+                <div class="form-group">
+                    <label>Текст новости</label>
+                    <textarea id="newsContent" placeholder="Описание новости..." rows="5" style="width: 100%; background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary); padding: 0.85rem; border-radius: 8px; font-size: 1rem; outline: none; resize: vertical; font-family: inherit;"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Ссылка на картинку (необязательно)</label>
+                    <input type="text" id="newsImage" placeholder="https://...">
+                </div>
+                <button class="btn" onclick="publishNews()" style="width: 100%; margin-top: 1rem;">Опубликовать</button>
+                <p id="newsError" style="color: var(--error); margin-top: 1rem; font-size: 0.9rem; text-align: center; display: none;"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛКА ДОБАВЛЕНИЯ ФОТО В ГАЛЕРЕЮ -->
+    <div id="galleryModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Добавить фото в галерею</h3>
+                <button class="close-modal" onclick="closeGalleryModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Ссылка на изображение</label>
+                    <input type="text" id="galleryUrl" placeholder="https://...">
+                </div>
+                <div class="form-group">
+                    <label>Подпись (необязательно)</label>
+                    <input type="text" id="galleryCaption" placeholder="Например: Спавн сервера" maxlength="100">
+                </div>
+                <button class="btn" onclick="addGalleryImage()" style="width: 100%; margin-top: 1rem;">Добавить</button>
+                <p id="galleryError" style="color: var(--error); margin-top: 1rem; font-size: 0.9rem; text-align: center; display: none;"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛКА КОММЕНТАРИЕВ -->
+    <div id="commentsModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3>Комментарии</h3>
+                <button class="close-modal" onclick="closeCommentsModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="commentsList" style="max-height: 400px; overflow-y: auto; margin-bottom: 1rem;"></div>
+                <div id="commentForm">
+                    <textarea id="commentText" placeholder="Напишите комментарий..." rows="3" style="width: 100%; background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary); padding: 0.85rem; border-radius: 8px; font-size: 1rem; outline: none; resize: vertical; font-family: inherit; margin-bottom: 0.5rem;"></textarea>
+                    <button class="btn" onclick="postComment()" style="width: 100%;">Отправить</button>
+                </div>
+                <p id="commentError" style="color: var(--error); margin-top: 0.5rem; font-size: 0.9rem; text-align: center; display: none;"></p>
             </div>
         </div>
     </div>
