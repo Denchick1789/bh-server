@@ -1,21 +1,49 @@
-// === ПУБЛИЧНЫЕ ПРОМОКОДЫ (Работают для ВСЕХ игроков) ===
-// Чтобы добавить код для всех, просто впиши его сюда в таком формате:
-const PUBLIC_PROMO_CODES = [
-    { code: "START5", discount: 5 },
-    { code: "BH2026", discount: 10 }
+// === ДАННЫЕ СЕРВЕРА ===
+const PRICES = [
+    { days: "10 дней", price: 50 },
+    { days: "30 дней", price: 143 },
+    { days: "90 дней", price: 406 },
+    { days: "180 дней", price: 772 },
+    { days: "365 дней", price: 1487 }
 ];
 
-// Локальные коды (сохраняются в браузере админа для тестов)
-let localPromoCodes = JSON.parse(localStorage.getItem('bh_promo_codes')) || [];
+const REFERRAL_COMMISSION = 10; // 10% комиссии
 
 let activeDiscount = 0;
-let activePromoName = "";
+let currentReferral = null;
 
 // === ИНИЦИАЛИЗАЦИЯ ===
-document.addEventListener('DOMContentLoaded', () => {
-    renderAdminList();
-    updateExportJson();
+document.addEventListener('DOMContentLoaded', async () => {
+    renderPriceCards();
+    await checkReferralLink();
+    await loadReferralStats();
+    loadPromoCodes();
 });
+
+// === ГЕНЕРАЦИЯ КАРТОЧЕК ЦЕН ===
+function renderPriceCards() {
+    const grid = document.getElementById('pricingGrid');
+    grid.innerHTML = '';
+    
+    PRICES.forEach((item, index) => {
+        const card = document.createElement('div');
+        card.className = `price-card ${index === 1 || index === 4 ? 'featured' : ''}`;
+        card.setAttribute('data-base-price', item.price);
+        
+        card.innerHTML = `
+            <div>
+                <div class="duration">${item.days}</div>
+                <div class="price-wrapper">
+                    <span class="original-price">${item.price} ₽</span>
+                    <span class="discounted-price" style="display: none;">0 ₽</span>
+                </div>
+            </div>
+            <a href="https://www.donationalerts.com/r/svyatik_over_world" target="_blank" class="btn">Купить</a>
+        `;
+        
+        grid.appendChild(card);
+    });
+}
 
 // === КОПИРОВАНИЕ IP ===
 function copyIP() {
@@ -26,24 +54,27 @@ function copyIP() {
     });
 }
 
-// === СИСТЕМА ПРОМОКОДОВ ===
+// === ПРОМОКОДЫ (АВТОМАТИЧЕСКИ ИЗ FIREBASE) ===
+function loadPromoCodes() {
+    db.ref('promoCodes').on('value', (snapshot) => {
+        const codes = snapshot.val() || {};
+        window.PUBLIC_PROMO_CODES = Object.values(codes);
+    });
+}
+
 function applyPromo() {
     const input = document.getElementById('promoInput').value.trim().toUpperCase();
     const msgEl = document.getElementById('promoMessage');
     
-    // Ищем в публичных и локальных
-    const allCodes = [...PUBLIC_PROMO_CODES, ...localPromoCodes];
-    const found = allCodes.find(c => c.code === input);
+    const found = window.PUBLIC_PROMO_CODES?.find(c => c.code === input);
 
     if (found) {
         activeDiscount = found.discount;
-        activePromoName = found.code;
         msgEl.textContent = `Промокод "${found.code}" применен! Скидка ${found.discount}%`;
         msgEl.className = "success";
         updatePrices();
     } else {
         activeDiscount = 0;
-        activePromoName = "";
         msgEl.textContent = "Неверный или истекший промокод";
         msgEl.className = "error";
         updatePrices();
@@ -71,96 +102,107 @@ function updatePrices() {
     });
 }
 
-// === АДМИН ПАНЕЛЬ (Ctrl + Alt + -) ===
-document.addEventListener('keydown', (e) => {
-    // Проверяем Ctrl + Alt + Minus (или Underscore на некоторых раскладках)
-    if (e.ctrlKey && e.altKey && (e.key === '-' || e.key === '_')) {
-        e.preventDefault();
-        document.getElementById('adminModal').classList.add('active');
+// === РЕФЕРАЛЬНАЯ СИСТЕМА ===
+async function checkReferralLink() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const ref = urlParams.get('ref');
+    
+    if (ref) {
+        // Сохраняем реферера в localStorage
+        localStorage.setItem('bh_referral', ref);
+        currentReferral = ref;
+        
+        // Увеличиваем счетчик переходов
+        const refStats = await db.ref(`referrals/${ref}/clicks`).once('value');
+        const clicks = refStats.val() || 0;
+        await db.ref(`referrals/${ref}/clicks`).set(clicks + 1);
+        
+        // Показываем уведомление
+        const toast = document.getElementById("toast");
+        toast.textContent = `Вы перешли по ссылке игрока ${ref}!`;
+        toast.className = "show";
+        setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
     }
-});
-
-function closeAdmin() {
-    document.getElementById('adminModal').classList.remove('active');
 }
 
-function createPromoCode() {
-    const codeInput = document.getElementById('newPromoCode');
-    const discountInput = document.getElementById('newPromoDiscount');
-    
-    const code = codeInput.value.trim().toUpperCase();
-    const discount = parseInt(discountInput.value);
-
-    if (!code || isNaN(discount) || discount < 1 || discount > 99) {
-        alert("Введите корректное название и процент скидки (1-99)");
+async function loadReferralStats() {
+    const savedRef = localStorage.getItem('bh_referral');
+    if (!savedRef) {
+        document.getElementById('referralLink').value = 'Создай свою ссылку ниже ↓';
         return;
     }
-
-    // Проверка на дубликаты
-    const allCodes = [...PUBLIC_PROMO_CODES, ...localPromoCodes];
-    if (allCodes.find(c => c.code === code)) {
-        alert("Такой промокод уже существует!");
-        return;
-    }
-
-    localPromoCodes.push({ code, discount });
-    localStorage.setItem('bh_promo_codes', JSON.stringify(localPromoCodes));
     
-    codeInput.value = '';
-    discountInput.value = '5';
+    currentReferral = savedRef;
+    const link = `${window.location.origin}${window.location.pathname}?ref=${savedRef}`;
+    document.getElementById('referralLink').value = link;
     
-    renderAdminList();
-    updateExportJson();
-    alert(`Промокод ${code} создан! (Пока работает только в вашем браузере).`);
-}
-
-function deleteLocalPromo(code) {
-    localPromoCodes = localPromoCodes.filter(c => c.code !== code);
-    localStorage.setItem('bh_promo_codes', JSON.stringify(localPromoCodes));
-    renderAdminList();
-    updateExportJson();
-}
-
-function renderAdminList() {
-    const listEl = document.getElementById('promoList');
-    listEl.innerHTML = '';
-    
-    if (localPromoCodes.length === 0) {
-        listEl.innerHTML = '<p style="color: var(--text-secondary); font-size: 0.9rem; text-align: center;">Локальных кодов нет</p>';
-        return;
-    }
-
-    localPromoCodes.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'promo-item';
-        div.innerHTML = `
-            <span><b>${item.code}</b> (-${item.discount}%)</span>
-            <button onclick="deleteLocalPromo('${item.code}')">Удалить</button>
-        `;
-        listEl.appendChild(div);
+    // Загружаем статистику
+    db.ref(`referrals/${savedRef}`).on('value', (snapshot) => {
+        const data = snapshot.val() || {};
+        document.getElementById('referralCount').textContent = data.clicks || 0;
+        document.getElementById('referralEarnings').textContent = `${data.earnings || 0} ₽`;
     });
 }
 
-function updateExportJson() {
-    const exportEl = document.getElementById('exportJson');
-    // Объединяем публичные и локальные для экспорта
-    const allForExport = [...PUBLIC_PROMO_CODES, ...localPromoCodes];
-    // Форматируем красиво
-    const jsonString = JSON.stringify(allForExport, null, 4);
-    exportEl.value = jsonString;
-}
-
-function copyExportJson() {
-    const exportEl = document.getElementById('exportJson');
-    exportEl.select();
-    document.execCommand('copy');
-    alert("JSON скопирован! Вставь его в файл script.js вместо старого массива PUBLIC_PROMO_CODES и загрузи на GitHub.");
-}
-
-// Закрытие модалки по клику вне её
-window.onclick = function(event) {
-    const modal = document.getElementById('adminModal');
-    if (event.target === modal) {
-        closeAdmin();
+function createReferralLink() {
+    const nameInput = document.getElementById('referralName');
+    const name = nameInput.value.trim().toUpperCase();
+    
+    if (!name) {
+        alert('Введите свой ник!');
+        return;
     }
+    
+    if (name.length < 3) {
+        alert('Ник должен быть минимум 3 символа!');
+        return;
+    }
+    
+    // Сохраняем в localStorage
+    localStorage.setItem('bh_referral', name);
+    
+    // Создаем запись в Firebase
+    db.ref(`referrals/${name}`).set({
+        clicks: 0,
+        earnings: 0,
+        createdAt: Date.now()
+    });
+    
+    // Обновляем интерфейс
+    loadReferralStats();
+    nameInput.value = '';
+    
+    alert(`Реферальная ссылка создана! Твой ник: ${name}`);
+}
+
+function copyReferralLink() {
+    const input = document.getElementById('referralLink');
+    input.select();
+    document.execCommand('copy');
+    
+    const toast = document.getElementById("toast");
+    toast.textContent = 'Реферальная ссылка скопирована!';
+    toast.className = "show";
+    setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 2500);
+}
+
+// === АВТОМАТИЧЕСКОЕ НАЧИСЛЕНИЕ КОМИССИИ ===
+// Эта функция вызывается из админки при подтверждении доната
+async function processDonation(referralName, amount) {
+    if (!referralName) return;
+    
+    const commission = Math.round(amount * REFERRAL_COMMISSION / 100);
+    
+    const refData = await db.ref(`referrals/${referralName}`).once('value');
+    const data = refData.val() || { earnings: 0 };
+    
+    await db.ref(`referrals/${referralName}/earnings`).set(data.earnings + commission);
+    
+    // Логируем транзакцию
+    await db.ref(`transactions`).push({
+        referral: referralName,
+        amount: amount,
+        commission: commission,
+        timestamp: Date.now()
+    });
 }
