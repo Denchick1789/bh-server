@@ -3,28 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BH Server | SMP+ 1.21.11</title>
-    <meta name="description" content="Minecraft сервер bh.mclan.ru (1.21.11). SMP+ с промокодами и реферальной системой.">
+    <title>BoecSMP | Сервер Minecraft</title>
+    <meta name="description" content="Официальный сайт BoecSMP. Реферальная система, промокоды и донат.">
     
-    <!-- Шрифты -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-    
-    <!-- Стили -->
     <link rel="stylesheet" href="style.css">
     
-    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 </head>
 <body>
 
-    <!-- Шапка -->
     <header>
         <div class="container nav-wrapper">
-            <a href="#" class="logo">BH<span>.mclan.ru</span></a>
+            <a href="#" class="logo">Boec<span>SMP</span></a>
             <nav class="nav-links">
                 <a href="#about">О сервере</a>
                 <a href="#donate">Донат</a>
@@ -35,11 +30,10 @@
         </div>
     </header>
 
-    <!-- Главный экран -->
     <section class="hero animate-in" id="about">
         <div class="container">
             <h1>Твой идеальный <span>SMP+</span> опыт</h1>
-            <p>Стабильный сервер с уникальными механиками, промокодами и реферальной системой.</p>
+            <p>Стабильный сервер с уникальными механиками, промокодами и честной реферальной системой.</p>
             
             <div class="ip-box" onclick="copyIP()" title="Нажми, чтобы скопировать">
                 <div class="ip-info">
@@ -51,7 +45,6 @@
         </div>
     </section>
 
-    <!-- Донат -->
     <section class="donate-section container" id="donate">
         <h2 class="section-title">Привилегия <span>VIP</span></h2>
         
@@ -61,18 +54,13 @@
             <span id="promoMessage"></span>
         </div>
 
-        <div class="pricing-grid" id="pricingGrid">
-            <!-- Карточки генерируются через JS -->
-        </div>
+        <div class="pricing-grid" id="pricingGrid"></div>
         
         <div style="text-align: center; margin-top: 2rem;">
-            <p style="color: var(--text-secondary); font-size: 0.85rem;">
-                * При оплате укажите промокод в комментарии к донату.
-            </p>
+            <p style="color: var(--text-secondary); font-size: 0.85rem;">* При оплате укажите промокод в комментарии к донату.</p>
         </div>
     </section>
 
-    <!-- Реферальная система -->
     <section class="referral-section" id="referral">
         <div class="container">
             <h2 class="section-title">Реферальная <span>программа</span></h2>
@@ -80,29 +68,27 @@
                 Приглашай друзей и получай <b style="color: var(--accent);">10% комиссии</b> от каждого их доната!
             </p>
             
-            <!-- Кнопка создания ссылки (видна всем) -->
+            <!-- Кнопка входа (видна, если не авторизован) -->
             <div class="referral-create" id="referralCreateBox">
-                <p style="color: var(--text-secondary); margin-bottom: 1rem;">
-                    <span id="createReferralText">Войдите, чтобы создать реферальную ссылку</span>
-                </p>
-                <button class="btn" onclick="openAuthModal()" id="createReferralBtn">Войти через Google</button>
+                <p style="color: var(--text-secondary); margin-bottom: 1rem;">Войдите, чтобы создать свою реферальную ссылку</p>
+                <button class="btn" onclick="openAuthModal()">Войти через Google</button>
             </div>
             
-            <!-- Личный кабинет (скрыт до авторизации) -->
+            <!-- Личный кабинет (виден только после входа и настройки) -->
             <div class="referral-box" id="userDashboard" style="display: none;">
                 <div class="dashboard-header">
                     <div class="user-info">
-                        <img id="userPhoto" src="" alt="User" class="user-photo">
+                        <img id="userPhoto" src="" alt="Avatar" class="user-photo">
                         <div>
-                            <h3 id="userName">Пользователь</h3>
-                            <p id="userEmail" style="color: var(--text-secondary); font-size: 0.9rem;"></p>
+                            <h3 id="userName">Никнейм</h3>
+                            <p style="color: var(--accent); font-size: 0.85rem; font-weight: 600;">Активный реферал</p>
                         </div>
                     </div>
                     <button class="btn btn-outline" onclick="logout()" style="width: auto; padding: 0.5rem 1rem;">Выйти</button>
                 </div>
                 
                 <div class="referral-info">
-                    <label>Твоя реферальная ссылка:</label>
+                    <label>Твоя уникальная реферальная ссылка:</label>
                     <div class="referral-link-container">
                         <input type="text" id="referralLink" readonly>
                         <button class="btn btn-outline" onclick="copyReferralLink()" style="width: auto; padding: 0.75rem 1.5rem;">Копировать</button>
@@ -120,22 +106,20 @@
                     </div>
                     <div class="stat-item">
                         <div class="stat-value" id="referralDonations">0</div>
-                        <div class="stat-label">Донатов</div>
+                        <div class="stat-label">Донатов друзей</div>
                     </div>
                 </div>
 
-                <!-- Поле для админ-кода -->
                 <div class="admin-code-section">
-                    <h4 style="margin-bottom: 1rem; color: var(--text-primary);">🔐 Администратор</h4>
+                    <h4 style="margin-bottom: 1rem; color: var(--text-primary);">🔐 Панель администратора</h4>
                     <input type="password" id="adminCodeInput" placeholder="Введите код администратора" style="max-width: 400px; margin: 0 auto 1rem; display: block;">
-                    <button class="btn" onclick="checkAdminCode()" style="max-width: 400px; margin: 0 auto;">Проверить код</button>
+                    <button class="btn" onclick="checkAdminCode()" style="max-width: 400px; margin: 0 auto;">Войти в админку</button>
                     <p id="adminMessage" style="margin-top: 1rem; font-size: 0.9rem;"></p>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Discord -->
     <section class="discord-section">
         <div class="container">
             <h2 class="section-title">Присоединяйся к нашему <span>Discord</span></h2>
@@ -146,14 +130,13 @@
         </div>
     </section>
 
-    <!-- Footer -->
     <footer>
         <div class="container">
-            <p>&copy; 2026 BH Server (bh.mclan.ru). Все права защищены.</p>
+            <p>&copy; 2026 BoecSMP (bh.mclan.ru). Все права защищены.</p>
         </div>
     </footer>
 
-    <!-- Модальное окно авторизации -->
+    <!-- Модальное окно входа -->
     <div id="authModal" class="modal">
         <div class="modal-content auth-modal">
             <div class="modal-header">
@@ -161,6 +144,9 @@
                 <button class="close-modal" onclick="closeAuthModal()">&times;</button>
             </div>
             <div class="modal-body">
+                <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.9rem;">
+                    Мы используем Google только для безопасного входа. Ваши личные данные не будут отображаться на сайте.
+                </p>
                 <button class="btn google-btn" onclick="signInWithGoogle()">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 10px;">
                         <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -174,10 +160,37 @@
         </div>
     </div>
 
-    <!-- Уведомления -->
-    <div id="toast">IP-адрес скопирован!</div>
+    <!-- Модальное окно НАСТРОЙКИ ПРОФИЛЯ (Новое!) -->
+    <div id="setupProfileModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Настройка реферального профиля</h3>
+            </div>
+            <div class="modal-body">
+                <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.9rem;">
+                    Придумайте ник и код, которые будут видны другим. Ваша почта останется скрытой.
+                </p>
+                <div class="form-group">
+                    <label>Ваш никнейм на сервере</label>
+                    <input type="text" id="setupNickname" placeholder="Например: Steve" maxlength="20">
+                </div>
+                <div class="form-group">
+                    <label>Ссылка на аватарку (необязательно)</label>
+                    <input type="text" id="setupAvatar" placeholder="https://... (оставьте пустым для авто-аватара)">
+                    <small style="color: var(--text-secondary); font-size: 0.8rem;">Если оставить пустым, подставится голова из Minecraft по вашему нику.</small>
+                </div>
+                <div class="form-group">
+                    <label>Ваш уникальный код реферала</label>
+                    <input type="text" id="setupRefCode" placeholder="Например: STEVE2024" maxlength="15" style="text-transform: uppercase;">
+                </div>
+                <button class="btn" onclick="saveCustomProfile()" style="width: 100%; margin-top: 1rem;">Сохранить и продолжить</button>
+                <p id="setupError" style="color: var(--error); margin-top: 1rem; font-size: 0.9rem; text-align: center; display: none;"></p>
+            </div>
+        </div>
+    </div>
 
-    <!-- Скрипты -->
+    <div id="toast">Сообщение</div>
+
     <script src="firebase-config.js"></script>
     <script src="script.js"></script>
 </body>
