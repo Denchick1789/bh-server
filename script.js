@@ -15,18 +15,37 @@ let userProfile = null;
 
 // === ИНИЦИАЛИЗАЦИЯ ===
 document.addEventListener('DOMContentLoaded', async () => {
+    console.log(' Сайт загружается...');
+    
+    // Проверяем, что Firebase подключен
+    if (typeof firebase === 'undefined' || typeof db === 'undefined') {
+        console.error('❌ Firebase не подключен! Проверь firebase-config.js');
+        alert('Ошибка: Firebase не подключен. Проверь консоль браузера (F12).');
+        return;
+    }
+    
     renderPriceCards();
     await checkReferralLink();
     loadPromoCodes();
     
     // Следим за состоянием авторизации Firebase
     firebase.auth().onAuthStateChanged(async (user) => {
+        console.log('👤 Состояние авторизации:', user ? 'Вошел' : 'Не вошел');
+        
         if (user) {
             currentUser = user;
-            await loadUserProfile();
+            console.log('✅ Пользователь вошел:', user.email);
+            
+            try {
+                await loadUserProfile();
+            } catch (error) {
+                console.error('❌ Ошибка загрузки профиля:', error);
+                alert('Ошибка загрузки профиля: ' + error.message);
+            }
         } else {
             currentUser = null;
             userProfile = null;
+            console.log('👋 Пользователь вышел');
             updateUserInterface(false);
         }
     });
@@ -35,6 +54,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 // === ГЕНЕРАЦИЯ КАРТОЧЕК ДОНАТА ===
 function renderPriceCards() {
     const grid = document.getElementById('pricingGrid');
+    if (!grid) {
+        console.error('❌ Не найден элемент pricingGrid');
+        return;
+    }
+    
     grid.innerHTML = '';
     PRICES.forEach((item, index) => {
         const card = document.createElement('div');
@@ -52,12 +76,15 @@ function renderPriceCards() {
         `;
         grid.appendChild(card);
     });
+    console.log('✅ Карточки доната созданы');
 }
 
 // === КОПИРОВАНИЕ IP ===
 function copyIP() {
     navigator.clipboard.writeText("bh.mclan.ru").then(() => {
         showToast("IP-адрес скопирован!");
+    }).catch(err => {
+        console.error('Ошибка копирования:', err);
     });
 }
 
@@ -65,6 +92,7 @@ function copyIP() {
 function loadPromoCodes() {
     db.ref('promoCodes').on('value', (snapshot) => {
         window.PUBLIC_PROMO_CODES = Object.values(snapshot.val() || {});
+        console.log('✅ Промокоды загружены:', window.PUBLIC_PROMO_CODES.length);
     });
 }
 
@@ -107,49 +135,105 @@ function updatePrices() {
 
 // === АВТОРИЗАЦИЯ ===
 function toggleAuth() {
-    currentUser ? logout() : openAuthModal();
+    console.log(' Клик по кнопке авторизации');
+    if (currentUser) {
+        logout();
+    } else {
+        openAuthModal();
+    }
 }
 
-function openAuthModal() { document.getElementById('authModal').classList.add('active'); }
-function closeAuthModal() { document.getElementById('authModal').classList.remove('active'); }
+function openAuthModal() { 
+    console.log('📱 Открытие модалки авторизации');
+    const modal = document.getElementById('authModal');
+    if (modal) {
+        modal.classList.add('active');
+    } else {
+        console.error('❌ Не найден элемент authModal');
+    }
+}
+
+function closeAuthModal() { 
+    const modal = document.getElementById('authModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+}
 
 function signInWithGoogle() {
+    console.log('🔐 Попытка входа через Google...');
     const provider = new firebase.auth.GoogleAuthProvider();
+    
     firebase.auth().signInWithPopup(provider)
-        .then(() => {
+        .then((result) => {
+            console.log('✅ Успешный вход:', result.user.email);
             closeAuthModal();
             showToast("Успешный вход!");
         })
-        .catch((error) => alert("Ошибка входа: " + error.message));
+        .catch((error) => {
+            console.error('❌ Ошибка входа:', error);
+            alert("Ошибка входа: " + error.message + "\n\nПроверь консоль браузера (F12) для деталей.");
+        });
 }
 
 function logout() {
+    console.log('👋 Выход из аккаунта');
     firebase.auth().signOut().then(() => {
         showToast("Вы вышли из аккаунта");
+    }).catch(err => {
+        console.error('Ошибка выхода:', err);
     });
 }
 
 // === ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ ===
 async function loadUserProfile() {
-    const userRef = db.ref(`users/${currentUser.uid}`);
-    const snapshot = await userRef.once('value');
+    console.log('📂 Загрузка профиля для UID:', currentUser.uid);
     
-    if (snapshot.exists()) {
-        userProfile = snapshot.val();
-        updateUserInterface(true);
-        loadReferralStats(userProfile.refCode);
-    } else {
-        openSetupModal();
+    try {
+        const userRef = db.ref(`users/${currentUser.uid}`);
+        const snapshot = await userRef.once('value');
+        
+        if (snapshot.exists()) {
+            console.log('✅ Профиль найден в базе');
+            userProfile = snapshot.val();
+            console.log('📋 Данные профиля:', userProfile);
+            updateUserInterface(true);
+            loadReferralStats(userProfile.refCode);
+        } else {
+            console.log('⚠️ Профиль не найден, открываем модалку настройки');
+            updateUserInterface(false);
+            openSetupModal();
+        }
+    } catch (error) {
+        console.error('❌ Ошибка при загрузке профиля:', error);
+        throw error;
     }
 }
 
-function openSetupModal() { document.getElementById('setupProfileModal').classList.add('active'); }
+function openSetupModal() { 
+    console.log('📝 Открытие модалки настройки профиля');
+    const modal = document.getElementById('setupProfileModal');
+    if (modal) {
+        modal.classList.add('active');
+    } else {
+        console.error('❌ Не найден элемент setupProfileModal');
+    }
+}
+
 function closeSetupModal() { 
-    document.getElementById('setupProfileModal').classList.remove('active'); 
-    document.getElementById('setupError').style.display = 'none'; 
+    const modal = document.getElementById('setupProfileModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+    const errorEl = document.getElementById('setupError');
+    if (errorEl) {
+        errorEl.style.display = 'none';
+    }
 }
 
 async function saveCustomProfile() {
+    console.log(' Сохранение кастомного профиля...');
+    
     const nickname = document.getElementById('setupNickname').value.trim();
     let avatar = document.getElementById('setupAvatar').value.trim();
     const refCode = document.getElementById('setupRefCode').value.trim().toUpperCase();
@@ -160,59 +244,84 @@ async function saveCustomProfile() {
         errorEl.style.display = 'block';
         return;
     }
+    
     if (refCode.length < 3 || !/^[A-Z0-9_]+$/.test(refCode)) {
         errorEl.textContent = "Код должен содержать только английские буквы, цифры и '_' (мин. 3 символа).";
         errorEl.style.display = 'block';
         return;
     }
 
-    const refCheck = await db.ref(`referrals/${refCode}`).once('value');
-    if (refCheck.exists()) {
-        errorEl.textContent = "Этот код реферала уже занят. Придумайте другой!";
+    try {
+        const refCheck = await db.ref(`referrals/${refCode}`).once('value');
+        if (refCheck.exists()) {
+            errorEl.textContent = "Этот код реферала уже занят. Придумайте другой!";
+            errorEl.style.display = 'block';
+            return;
+        }
+
+        // Если аватар не указан, берем голову из Minecraft по нику
+        if (!avatar) {
+            avatar = `https://mc-heads.net/avatar/${encodeURIComponent(nickname)}/100`;
+        }
+
+        const newProfile = {
+            uid: currentUser.uid,
+            nickname: nickname,
+            avatar: avatar,
+            refCode: refCode,
+            createdAt: Date.now()
+        };
+
+        console.log('📤 Сохранение профиля в базу...');
+        await db.ref(`users/${currentUser.uid}`).set(newProfile);
+        
+        await db.ref(`referrals/${refCode}`).set({
+            clicks: 0,
+            earnings: 0,
+            donations: 0,
+            ownerUid: currentUser.uid,
+            createdAt: Date.now()
+        });
+
+        userProfile = newProfile;
+        console.log('✅ Профиль сохранен:', userProfile);
+        
+        closeSetupModal();
+        updateUserInterface(true);
+        loadReferralStats(refCode);
+        showToast("Профиль успешно создан!");
+        
+    } catch (error) {
+        console.error('❌ Ошибка сохранения профиля:', error);
+        errorEl.textContent = "Ошибка сохранения: " + error.message;
         errorEl.style.display = 'block';
-        return;
     }
-
-    // Если аватар не указан, берем голову из Minecraft по нику
-    if (!avatar) {
-        avatar = `https://mc-heads.net/avatar/${encodeURIComponent(nickname)}/100`;
-    }
-
-    const newProfile = {
-        uid: currentUser.uid,
-        nickname: nickname,
-        avatar: avatar,
-        refCode: refCode,
-        createdAt: Date.now()
-    };
-
-    await db.ref(`users/${currentUser.uid}`).set(newProfile);
-    await db.ref(`referrals/${refCode}`).set({
-        clicks: 0,
-        earnings: 0,
-        donations: 0,
-        ownerUid: currentUser.uid,
-        createdAt: Date.now()
-    });
-
-    userProfile = newProfile;
-    closeSetupModal();
-    updateUserInterface(true);
-    loadReferralStats(refCode);
-    showToast("Профиль успешно создан!");
 }
 
 function updateUserInterface(isLoggedIn) {
+    console.log(' Обновление интерфейса:', isLoggedIn ? 'вошел' : 'вышел');
+    
     const authBtn = document.getElementById('authBtn');
     const createBox = document.getElementById('referralCreateBox');
     const dashboard = document.getElementById('userDashboard');
+    
+    if (!authBtn || !createBox || !dashboard) {
+        console.error('❌ Не найдены элементы интерфейса');
+        return;
+    }
     
     if (isLoggedIn && userProfile) {
         authBtn.textContent = 'Выйти';
         createBox.style.display = 'none';
         dashboard.style.display = 'block';
-        document.getElementById('userName').textContent = userProfile.nickname;
-        document.getElementById('userPhoto').src = userProfile.avatar;
+        
+        const userNameEl = document.getElementById('userName');
+        const userPhotoEl = document.getElementById('userPhoto');
+        
+        if (userNameEl) userNameEl.textContent = userProfile.nickname;
+        if (userPhotoEl) userPhotoEl.src = userProfile.avatar;
+        
+        console.log('✅ Интерфейс обновлен для пользователя:', userProfile.nickname);
     } else {
         authBtn.textContent = 'Войти';
         createBox.style.display = 'block';
@@ -226,41 +335,57 @@ async function checkReferralLink() {
     const ref = urlParams.get('ref');
     
     if (ref) {
+        console.log('🔗 Переход по реферальной ссылке:', ref);
         localStorage.setItem('bh_referral', ref);
-        const refStats = await db.ref(`referrals/${ref}/clicks`).once('value');
-        await db.ref(`referrals/${ref}/clicks`).set((refStats.val() || 0) + 1);
-        showToast(`Вы перешли по ссылке реферала!`);
+        
+        try {
+            const refStats = await db.ref(`referrals/${ref}/clicks`).once('value');
+            await db.ref(`referrals/${ref}/clicks`).set((refStats.val() || 0) + 1);
+            showToast(`Вы перешли по ссылке реферала!`);
+        } catch (error) {
+            console.error('Ошибка обновления счетчика:', error);
+        }
     }
 }
 
 function loadReferralStats(refCode) {
+    console.log('📊 Загрузка статистики для реферала:', refCode);
+    
     db.ref(`referrals/${refCode}`).on('value', (snapshot) => {
         const data = snapshot.val() || {};
-        document.getElementById('referralCount').textContent = data.clicks || 0;
-        document.getElementById('referralEarnings').textContent = `${data.earnings || 0} ₽`;
-        document.getElementById('referralDonations').textContent = data.donations || 0;
+        
+        const countEl = document.getElementById('referralCount');
+        const earningsEl = document.getElementById('referralEarnings');
+        const donationsEl = document.getElementById('referralDonations');
+        
+        if (countEl) countEl.textContent = data.clicks || 0;
+        if (earningsEl) earningsEl.textContent = `${data.earnings || 0} ₽`;
+        if (donationsEl) donationsEl.textContent = data.donations || 0;
     });
     
     const link = `${window.location.origin}${window.location.pathname}?ref=${refCode}`;
-    document.getElementById('referralLink').value = link;
+    const linkInput = document.getElementById('referralLink');
+    if (linkInput) {
+        linkInput.value = link;
+    }
 }
 
 function copyReferralLink() {
     const input = document.getElementById('referralLink');
-    input.select();
-    document.execCommand('copy');
-    showToast('Реферальная ссылка скопирована!');
+    if (input) {
+        input.select();
+        document.execCommand('copy');
+        showToast('Реферальная ссылка скопирована!');
+    }
 }
 
-// === АДМИН КОД (С БЕСШОВНЫМ ПЕРЕХОДОМ) ===
+// === АДМИН КОД ===
 function checkAdminCode() {
     const input = document.getElementById('adminCodeInput').value.trim();
     const msgEl = document.getElementById('adminMessage');
     
     if (input === ADMIN_CODE) {
-        // ✅ Сохраняем флаг доступа в сессии браузера
         sessionStorage.setItem('bh_admin_access', 'granted');
-        
         msgEl.textContent = "✅ Код принят! Перенаправление...";
         msgEl.style.color = "var(--accent)";
         
@@ -268,18 +393,53 @@ function checkAdminCode() {
             window.location.href = 'admin.html'; 
         }, 1000);
     } else {
-        msgEl.textContent = "❌ Неверный код!";
+        msgEl.textContent = " Неверный код!";
         msgEl.style.color = "var(--error)";
         setTimeout(() => { msgEl.textContent = ""; }, 3000);
+    }
+}
+
+// === СБРОС ПРОФИЛЯ ===
+async function resetProfile() {
+    if (!confirm('⚠️ Вы уверены? Это удалит ваш профиль и реферальный код. Вся статистика будет потеряна безвозвратно!')) {
+        return;
+    }
+    
+    if (!confirm('Точно удалить? Это действие нельзя отменить!')) {
+        return;
+    }
+    
+    try {
+        console.log('🗑️ Удаление профиля...');
+        
+        await db.ref(`users/${currentUser.uid}`).remove();
+        
+        if (userProfile && userProfile.refCode) {
+            await db.ref(`referrals/${userProfile.refCode}`).remove();
+        }
+        
+        await firebase.auth().signOut();
+        
+        showToast('Профиль удален! Войдите снова, чтобы создать новый.');
+        
+        setTimeout(() => {
+            location.reload();
+        }, 2000);
+        
+    } catch (error) {
+        console.error('❌ Ошибка при сбросе:', error);
+        alert('Произошла ошибка при сбросе профиля: ' + error.message);
     }
 }
 
 // === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===
 function showToast(message) {
     const toast = document.getElementById("toast");
-    toast.textContent = message;
-    toast.className = "show";
-    setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 2500);
+    if (toast) {
+        toast.textContent = message;
+        toast.className = "show";
+        setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 2500);
+    }
 }
 
 window.onclick = function(event) {
