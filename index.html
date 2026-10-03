@@ -68,13 +68,11 @@
                 Приглашай друзей и получай <b style="color: var(--accent);">10% комиссии</b> от каждого их доната!
             </p>
             
-            <!-- Кнопка входа (видна, если не авторизован) -->
             <div class="referral-create" id="referralCreateBox">
                 <p style="color: var(--text-secondary); margin-bottom: 1rem;">Войдите, чтобы создать свою реферальную ссылку</p>
                 <button class="btn" onclick="openAuthModal()">Войти через Google</button>
             </div>
             
-            <!-- Личный кабинет (виден только после входа и настройки) -->
             <div class="referral-box" id="userDashboard" style="display: none;">
                 <div class="dashboard-header">
                     <div class="user-info">
@@ -84,7 +82,10 @@
                             <p style="color: var(--accent); font-size: 0.85rem; font-weight: 600;">Активный реферал</p>
                         </div>
                     </div>
-                    <button class="btn btn-outline" onclick="logout()" style="width: auto; padding: 0.5rem 1rem;">Выйти</button>
+                    <div style="display: flex; gap: 1rem;">
+                        <button class="btn btn-outline" onclick="resetProfile()" style="width: auto; padding: 0.5rem 1rem; background: var(--error); color: white; border-color: var(--error);">Сбросить</button>
+                        <button class="btn btn-outline" onclick="logout()" style="width: auto; padding: 0.5rem 1rem;">Выйти</button>
+                    </div>
                 </div>
                 
                 <div class="referral-info">
@@ -136,7 +137,6 @@
         </div>
     </footer>
 
-    <!-- Модальное окно входа -->
     <div id="authModal" class="modal">
         <div class="modal-content auth-modal">
             <div class="modal-header">
@@ -145,7 +145,7 @@
             </div>
             <div class="modal-body">
                 <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.9rem;">
-                    Мы используем Google только для безопасного входа. Ваши личные данные не будут отображаться на сайте.
+                    Мы используем Google только для безопасного входа.
                 </p>
                 <button class="btn google-btn" onclick="signInWithGoogle()">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 10px;">
@@ -160,30 +160,26 @@
         </div>
     </div>
 
-    <!-- Модальное окно НАСТРОЙКИ ПРОФИЛЯ (Новое!) -->
     <div id="setupProfileModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Настройка реферального профиля</h3>
+                <h3>Настройка профиля</h3>
+                <button class="close-modal" onclick="closeSetupModal()">&times;</button>
             </div>
             <div class="modal-body">
-                <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.9rem;">
-                    Придумайте ник и код, которые будут видны другим. Ваша почта останется скрытой.
-                </p>
                 <div class="form-group">
-                    <label>Ваш никнейм на сервере</label>
+                    <label>Ваш никнейм</label>
                     <input type="text" id="setupNickname" placeholder="Например: Steve" maxlength="20">
                 </div>
                 <div class="form-group">
                     <label>Ссылка на аватарку (необязательно)</label>
-                    <input type="text" id="setupAvatar" placeholder="https://... (оставьте пустым для авто-аватара)">
-                    <small style="color: var(--text-secondary); font-size: 0.8rem;">Если оставить пустым, подставится голова из Minecraft по вашему нику.</small>
+                    <input type="text" id="setupAvatar" placeholder="https://...">
                 </div>
                 <div class="form-group">
-                    <label>Ваш уникальный код реферала</label>
+                    <label>Код реферала</label>
                     <input type="text" id="setupRefCode" placeholder="Например: STEVE2024" maxlength="15" style="text-transform: uppercase;">
                 </div>
-                <button class="btn" onclick="saveCustomProfile()" style="width: 100%; margin-top: 1rem;">Сохранить и продолжить</button>
+                <button class="btn" onclick="saveCustomProfile()" style="width: 100%; margin-top: 1rem;">Сохранить</button>
                 <p id="setupError" style="color: var(--error); margin-top: 1rem; font-size: 0.9rem; text-align: center; display: none;"></p>
             </div>
         </div>
