@@ -1,3 +1,4 @@
+// === КОНСТАНТЫ И ПЕРЕМЕННЫЕ ===
 const PRICES = [
     { days: "10 дней", price: 50 },
     { days: "30 дней", price: 143 },
@@ -10,14 +11,15 @@ const ADMIN_CODE = "PERFARATOR1487";
 
 let activeDiscount = 0;
 let currentUser = null;
-let userProfile = null; // Здесь будем хранить кастомный профиль
+let userProfile = null;
 
+// === ИНИЦИАЛИЗАЦИЯ ===
 document.addEventListener('DOMContentLoaded', async () => {
     renderPriceCards();
     await checkReferralLink();
     loadPromoCodes();
     
-    // Следим за состоянием входа
+    // Следим за состоянием авторизации Firebase
     firebase.auth().onAuthStateChanged(async (user) => {
         if (user) {
             currentUser = user;
@@ -30,6 +32,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 });
 
+// === ГЕНЕРАЦИЯ КАРТОЧЕК ДОНАТА ===
 function renderPriceCards() {
     const grid = document.getElementById('pricingGrid');
     grid.innerHTML = '';
@@ -51,8 +54,11 @@ function renderPriceCards() {
     });
 }
 
+// === КОПИРОВАНИЕ IP ===
 function copyIP() {
-    navigator.clipboard.writeText("bh.mclan.ru").then(() => showToast("IP-адрес скопирован!"));
+    navigator.clipboard.writeText("bh.mclan.ru").then(() => {
+        showToast("IP-адрес скопирован!");
+    });
 }
 
 // === ПРОМОКОДЫ ===
@@ -99,7 +105,7 @@ function updatePrices() {
     });
 }
 
-// === АВТОРИЗАЦИЯ И ПРОФИЛЬ ===
+// === АВТОРИЗАЦИЯ ===
 function toggleAuth() {
     currentUser ? logout() : openAuthModal();
 }
@@ -110,36 +116,37 @@ function closeAuthModal() { document.getElementById('authModal').classList.remov
 function signInWithGoogle() {
     const provider = new firebase.auth.GoogleAuthProvider();
     firebase.auth().signInWithPopup(provider)
-        .then(() => closeAuthModal())
+        .then(() => {
+            closeAuthModal();
+            showToast("Успешный вход!");
+        })
         .catch((error) => alert("Ошибка входа: " + error.message));
 }
 
 function logout() {
-    firebase.auth().signOut().then(() => showToast("Вы вышли из аккаунта"));
+    firebase.auth().signOut().then(() => {
+        showToast("Вы вышли из аккаунта");
+    });
 }
 
+// === ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ ===
 async function loadUserProfile() {
     const userRef = db.ref(`users/${currentUser.uid}`);
     const snapshot = await userRef.once('value');
     
     if (snapshot.exists()) {
-        // Профиль уже создан, загружаем его
         userProfile = snapshot.val();
         updateUserInterface(true);
         loadReferralStats(userProfile.refCode);
     } else {
-        // Профиля нет, открываем окно настройки
         openSetupModal();
     }
 }
 
-function openSetupModal() {
-    document.getElementById('setupProfileModal').classList.add('active');
-}
-
-function closeSetupModal() {
-    document.getElementById('setupProfileModal').classList.remove('active');
-    document.getElementById('setupError').style.display = 'none';
+function openSetupModal() { document.getElementById('setupProfileModal').classList.add('active'); }
+function closeSetupModal() { 
+    document.getElementById('setupProfileModal').classList.remove('active'); 
+    document.getElementById('setupError').style.display = 'none'; 
 }
 
 async function saveCustomProfile() {
@@ -148,7 +155,6 @@ async function saveCustomProfile() {
     const refCode = document.getElementById('setupRefCode').value.trim().toUpperCase();
     const errorEl = document.getElementById('setupError');
 
-    // Валидация
     if (!nickname || !refCode) {
         errorEl.textContent = "Заполните никнейм и код реферала!";
         errorEl.style.display = 'block';
@@ -160,15 +166,14 @@ async function saveCustomProfile() {
         return;
     }
 
-    // Проверяем, не занят ли код
     const refCheck = await db.ref(`referrals/${refCode}`).once('value');
     if (refCheck.exists()) {
-        errorEl.textContent = "Этот код реферала уже занят кем-то другим. Придумайте другой!";
+        errorEl.textContent = "Этот код реферала уже занят. Придумайте другой!";
         errorEl.style.display = 'block';
         return;
     }
 
-    // Если аватар не указан, генерируем голову из Minecraft по нику
+    // Если аватар не указан, берем голову из Minecraft по нику
     if (!avatar) {
         avatar = `https://mc-heads.net/avatar/${encodeURIComponent(nickname)}/100`;
     }
@@ -181,10 +186,7 @@ async function saveCustomProfile() {
         createdAt: Date.now()
     };
 
-    // Сохраняем профиль пользователя
     await db.ref(`users/${currentUser.uid}`).set(newProfile);
-    
-    // Инициализируем статистику реферала
     await db.ref(`referrals/${refCode}`).set({
         clicks: 0,
         earnings: 0,
@@ -209,7 +211,6 @@ function updateUserInterface(isLoggedIn) {
         authBtn.textContent = 'Выйти';
         createBox.style.display = 'none';
         dashboard.style.display = 'block';
-        
         document.getElementById('userName').textContent = userProfile.nickname;
         document.getElementById('userPhoto').src = userProfile.avatar;
     } else {
@@ -228,7 +229,7 @@ async function checkReferralLink() {
         localStorage.setItem('bh_referral', ref);
         const refStats = await db.ref(`referrals/${ref}/clicks`).once('value');
         await db.ref(`referrals/${ref}/clicks`).set((refStats.val() || 0) + 1);
-        showToast(`Вы перешли по ссылке игрока!`);
+        showToast(`Вы перешли по ссылке реферала!`);
     }
 }
 
@@ -251,15 +252,21 @@ function copyReferralLink() {
     showToast('Реферальная ссылка скопирована!');
 }
 
-// === АДМИН КОД ===
+// === АДМИН КОД (С БЕСШОВНЫМ ПЕРЕХОДОМ) ===
 function checkAdminCode() {
     const input = document.getElementById('adminCodeInput').value.trim();
     const msgEl = document.getElementById('adminMessage');
     
     if (input === ADMIN_CODE) {
+        // ✅ Сохраняем флаг доступа в сессии браузера
+        sessionStorage.setItem('bh_admin_access', 'granted');
+        
         msgEl.textContent = "✅ Код принят! Перенаправление...";
         msgEl.style.color = "var(--accent)";
-        setTimeout(() => { window.location.href = 'admin.html'; }, 1000);
+        
+        setTimeout(() => { 
+            window.location.href = 'admin.html'; 
+        }, 1000);
     } else {
         msgEl.textContent = "❌ Неверный код!";
         msgEl.style.color = "var(--error)";
@@ -267,6 +274,7 @@ function checkAdminCode() {
     }
 }
 
+// === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===
 function showToast(message) {
     const toast = document.getElementById("toast");
     toast.textContent = message;
