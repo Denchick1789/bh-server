@@ -504,3 +504,25 @@ footer {
         text-align: center;
     }
 }
+/* Стили для формы настройки профиля */
+.form-group { margin-bottom: 1.2rem; text-align: left; }
+.form-group label { 
+    display: block; 
+    color: var(--text-secondary); 
+    font-size: 0.85rem; 
+    font-weight: 600; 
+    margin-bottom: 0.4rem; 
+}
+.form-group input { 
+    width: 100%; 
+    background: var(--bg-secondary); 
+    border: 1px solid var(--border); 
+    color: var(--text-primary); 
+    padding: 0.85rem; 
+    border-radius: 8px; 
+    font-size: 1rem; 
+    outline: none; 
+    transition: border 0.2s;
+}
+.form-group input:focus { border-color: var(--accent); }
+.form-group input::placeholder { color: var(--text-secondary); opacity: 0.6; }
