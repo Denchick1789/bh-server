@@ -8,15 +8,30 @@ const PRICES = [
 ];
 
 const REFERRAL_COMMISSION = 10; // 10% комиссии
+const ADMIN_CODE = "PERFARATOR1487";
 
 let activeDiscount = 0;
-let currentReferral = null;
+let currentUser = null;
+let userReferralName = null;
 
 // === ИНИЦИАЛИЗАЦИЯ ===
 document.addEventListener('DOMContentLoaded', async () => {
     renderPriceCards();
     await checkReferralLink();
-    await loadReferralStats();
+    
+    // Проверяем авторизацию
+    firebase.auth().onAuthStateChanged(async (user) => {
+        if (user) {
+            currentUser = user;
+            updateUserInterface(true);
+            await loadUserReferralData();
+        } else {
+            currentUser = null;
+            userReferralName = null;
+            updateUserInterface(false);
+        }
+    });
+    
     loadPromoCodes();
 });
 
@@ -49,12 +64,13 @@ function renderPriceCards() {
 function copyIP() {
     navigator.clipboard.writeText("bh.mclan.ru").then(() => {
         const toast = document.getElementById("toast");
+        toast.textContent = "IP-адрес скопирован!";
         toast.className = "show";
         setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 2500);
     });
 }
 
-// === ПРОМОКОДЫ (АВТОМАТИЧЕСКИ ИЗ FIREBASE) ===
+// === ПРОМОКОДЫ ===
 function loadPromoCodes() {
     db.ref('promoCodes').on('value', (snapshot) => {
         const codes = snapshot.val() || {};
@@ -102,77 +118,109 @@ function updatePrices() {
     });
 }
 
+// === GOOGLE AUTH ===
+function toggleAuth() {
+    if (currentUser) {
+        logout();
+    } else {
+        openAuthModal();
+    }
+}
+
+function openAuthModal() {
+    document.getElementById('authModal').classList.add('active');
+}
+
+function closeAuthModal() {
+    document.getElementById('authModal').classList.remove('active');
+}
+
+function signInWithGoogle() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    firebase.auth().signInWithPopup(provider)
+        .then((result) => {
+            closeAuthModal();
+            showToast(`Добро пожаловать, ${result.user.displayName}!`);
+        })
+        .catch((error) => {
+            console.error("Ошибка входа:", error);
+            alert("Ошибка входа: " + error.message);
+        });
+}
+
+function logout() {
+    firebase.auth().signOut().then(() => {
+        showToast("Вы вышли из аккаунта");
+    });
+}
+
+function updateUserInterface(isLoggedIn) {
+    const authBtn = document.getElementById('authBtn');
+    const createBox = document.getElementById('referralCreateBox');
+    const dashboard = document.getElementById('userDashboard');
+    
+    if (isLoggedIn) {
+        authBtn.textContent = 'Выйти';
+        createBox.style.display = 'none';
+        dashboard.style.display = 'block';
+        
+        // Заполняем данные пользователя
+        document.getElementById('userName').textContent = currentUser.displayName;
+        document.getElementById('userEmail').textContent = currentUser.email;
+        document.getElementById('userPhoto').src = currentUser.photoURL || 'https://via.placeholder.com/50';
+    } else {
+        authBtn.textContent = 'Войти';
+        createBox.style.display = 'block';
+        dashboard.style.display = 'none';
+    }
+}
+
 // === РЕФЕРАЛЬНАЯ СИСТЕМА ===
 async function checkReferralLink() {
     const urlParams = new URLSearchParams(window.location.search);
     const ref = urlParams.get('ref');
     
     if (ref) {
-        // Сохраняем реферера в localStorage
         localStorage.setItem('bh_referral', ref);
-        currentReferral = ref;
         
-        // Увеличиваем счетчик переходов
         const refStats = await db.ref(`referrals/${ref}/clicks`).once('value');
         const clicks = refStats.val() || 0;
         await db.ref(`referrals/${ref}/clicks`).set(clicks + 1);
         
-        // Показываем уведомление
-        const toast = document.getElementById("toast");
-        toast.textContent = `Вы перешли по ссылке игрока ${ref}!`;
-        toast.className = "show";
-        setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
+        showToast(`Вы перешли по ссылке игрока ${ref}!`);
     }
 }
 
-async function loadReferralStats() {
-    const savedRef = localStorage.getItem('bh_referral');
-    if (!savedRef) {
-        document.getElementById('referralLink').value = 'Создай свою ссылку ниже ↓';
-        return;
-    }
+async function loadUserReferralData() {
+    if (!currentUser) return;
     
-    currentReferral = savedRef;
-    const link = `${window.location.origin}${window.location.pathname}?ref=${savedRef}`;
+    // Используем email как уникальный идентификатор для реферальной ссылки
+    const emailPrefix = currentUser.email.split('@')[0].toUpperCase().replace(/[^A-Z0-9]/g, '');
+    userReferralName = `USER_${emailPrefix}_${currentUser.uid.substring(0, 4)}`;
+    
+    const link = `${window.location.origin}${window.location.pathname}?ref=${userReferralName}`;
     document.getElementById('referralLink').value = link;
     
-    // Загружаем статистику
-    db.ref(`referrals/${savedRef}`).on('value', (snapshot) => {
+    // Создаем запись если нет
+    const refSnapshot = await db.ref(`referrals/${userReferralName}`).once('value');
+    if (!refSnapshot.exists()) {
+        await db.ref(`referrals/${userReferralName}`).set({
+            clicks: 0,
+            earnings: 0,
+            donations: 0,
+            userId: currentUser.uid,
+            userEmail: currentUser.email,
+            createdAt: Date.now()
+        });
+    }
+    
+    // Подписываемся на обновления
+    db.ref(`referrals/${userReferralName}`).on('value', (snapshot) => {
         const data = snapshot.val() || {};
         document.getElementById('referralCount').textContent = data.clicks || 0;
         document.getElementById('referralEarnings').textContent = `${data.earnings || 0} ₽`;
+        document.getElementById('referralDonations').textContent = data.donations || 0;
     });
-}
-
-function createReferralLink() {
-    const nameInput = document.getElementById('referralName');
-    const name = nameInput.value.trim().toUpperCase();
-    
-    if (!name) {
-        alert('Введите свой ник!');
-        return;
-    }
-    
-    if (name.length < 3) {
-        alert('Ник должен быть минимум 3 символа!');
-        return;
-    }
-    
-    // Сохраняем в localStorage
-    localStorage.setItem('bh_referral', name);
-    
-    // Создаем запись в Firebase
-    db.ref(`referrals/${name}`).set({
-        clicks: 0,
-        earnings: 0,
-        createdAt: Date.now()
-    });
-    
-    // Обновляем интерфейс
-    loadReferralStats();
-    nameInput.value = '';
-    
-    alert(`Реферальная ссылка создана! Твой ник: ${name}`);
 }
 
 function copyReferralLink() {
@@ -180,29 +228,43 @@ function copyReferralLink() {
     input.select();
     document.execCommand('copy');
     
+    showToast('Реферальная ссылка скопирована!');
+}
+
+// === АДМИН КОД ===
+function checkAdminCode() {
+    const input = document.getElementById('adminCodeInput').value.trim();
+    const msgEl = document.getElementById('adminMessage');
+    
+    if (input === ADMIN_CODE) {
+        msgEl.textContent = "✅ Код принят! Вы перенаправляетесь в админ-панель...";
+        msgEl.style.color = "var(--accent)";
+        
+        setTimeout(() => {
+            window.location.href = 'admin.html';
+        }, 1500);
+    } else {
+        msgEl.textContent = "❌ Неверный код администратора!";
+        msgEl.style.color = "var(--error)";
+        
+        setTimeout(() => {
+            msgEl.textContent = "";
+        }, 3000);
+    }
+}
+
+// === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===
+function showToast(message) {
     const toast = document.getElementById("toast");
-    toast.textContent = 'Реферальная ссылка скопирована!';
+    toast.textContent = message;
     toast.className = "show";
     setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 2500);
 }
 
-// === АВТОМАТИЧЕСКОЕ НАЧИСЛЕНИЕ КОМИССИИ ===
-// Эта функция вызывается из админки при подтверждении доната
-async function processDonation(referralName, amount) {
-    if (!referralName) return;
-    
-    const commission = Math.round(amount * REFERRAL_COMMISSION / 100);
-    
-    const refData = await db.ref(`referrals/${referralName}`).once('value');
-    const data = refData.val() || { earnings: 0 };
-    
-    await db.ref(`referrals/${referralName}/earnings`).set(data.earnings + commission);
-    
-    // Логируем транзакцию
-    await db.ref(`transactions`).push({
-        referral: referralName,
-        amount: amount,
-        commission: commission,
-        timestamp: Date.now()
-    });
+// Закрытие модалки по клику вне
+window.onclick = function(event) {
+    const modal = document.getElementById('authModal');
+    if (event.target === modal) {
+        closeAuthModal();
+    }
 }
