@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админ-панель | BH Server</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <style>
+        body { padding: 2rem; }
+        .admin-container { max-width: 800px; margin: 0 auto; }
+        .admin-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; margin-bottom: 2rem; }
+        .admin-section h2 { margin-bottom: 1.5rem; color: var(--accent); }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; color: var(--text-secondary); margin-bottom: 0.5rem; }
+        .form-group input { width: 100%; background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary); padding: 0.75rem; border-radius: 8px; }
+        .promo-list { margin-top: 1rem; }
+        .promo-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: var(--bg-secondary); border-radius: 8px; margin-bottom: 0.5rem; }
+        .delete-btn { background: var(--error); color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <h1 style="text-align: center; margin-bottom: 2rem;">Админ-панель BH Server</h1>
+        
+        <!-- Управление промокодами -->
+        <div class="admin-section">
+            <h2>Промокоды</h2>
+            <div class="form-group">
+                <label>Название промокода</label>
+                <input type="text" id="adminPromoCode" placeholder="НАПРИМЕР: START5" style="text-transform: uppercase;">
+            </div>
+            <div class="form-group">
+                <label>Скидка (%)</label>
+                <input type="number" id="adminPromoDiscount" placeholder="5" min="1" max="99" value="5">
+            </div>
+            <button class="btn" onclick="createPromoCode()">Создать промокод</button>
+            
+            <div class="promo-list" id="promoList"></div>
+        </div>
+        
+        <!-- Подтверждение донатов -->
+        <div class="admin-section">
+            <h2>Подтвердить донат (начислить комиссию)</h2>
+            <div class="form-group">
+                <label>Ник реферера</label>
+                <input type="text" id="adminReferralName" placeholder="STEVE">
+            </div>
+            <div class="form-group">
+                <label>Сумма доната (₽)</label>
+                <input type="number" id="adminDonationAmount" placeholder="143">
+            </div>
+            <button class="btn" onclick="confirmDonation()">Подтвердить и начислить комиссию</button>
+        </div>
+        
+        <!-- Статистика -->
+        <div class="admin-section">
+            <h2>Общая статистика</h2>
+            <div id="adminStats"></div>
+        </div>
+    </div>
+
+    <script src="firebase-config.js"></script>
+    <script src="admin.js"></script>
+</body>
+</html>
