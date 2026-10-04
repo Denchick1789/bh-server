@@ -12,7 +12,7 @@ function checkAuth() {
 
 function login() {
     const password = document.getElementById('adminPassword').value;
-    if (password === "bh2026") { 
+    if (password === "BSMP0019") { 
         sessionStorage.setItem('bh_admin_access', 'granted');
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('adminContent').style.display = 'block';
