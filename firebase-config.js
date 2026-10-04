@@ -1,4 +1,3 @@
-// Конфигурация Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyDn9fKBWzrskoj_TdER_XknrGLzHLcxkIE",
     authDomain: "bh-server-c739a.firebaseapp.com",
@@ -10,9 +9,7 @@ const firebaseConfig = {
     measurementId: "G-B5JYXWB721"
 };
 
-// Инициализация
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const auth = firebase.auth();
-
 console.log('✅ Firebase подключен!');
