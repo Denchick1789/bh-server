@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BoecSMP | Сервер Minecraft</title>
+    <link rel="icon" type="image/png" href="Logo_Boec.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -17,7 +18,9 @@
 
     <header>
         <div class="container nav-wrapper">
-            <a href="#" class="logo">Boec<span>SMP</span></a>
+            <div class="logo-container">
+                <img src="Logo_Boec.png" alt="BoecSMP" class="logo-img">
+            </div>
             <nav class="nav-links">
                 <a href="#news">Новости</a>
                 <a href="#gallery">Галерея</a>
@@ -31,6 +34,7 @@
 
     <section class="hero animate-in" id="about">
         <div class="container">
+            <img src="Logo_Boec.png" alt="BoecSMP" class="hero-logo">
             <h1>Твой идеальный <span>SMP+</span> опыт</h1>
             <p>Стабильный сервер с уникальными механиками, промокодами и честной реферальной системой.</p>
             <div class="ip-box" onclick="copyIP()" title="Нажми, чтобы скопировать">
@@ -43,7 +47,7 @@
         </div>
     </section>
 
-    <!-- НОВОСТИ (ТОЛЬКО ПРОСМОТР) -->
+    <!-- НОВОСТИ -->
     <section class="news-section" id="news">
         <div class="container">
             <h2 class="section-title">Последние <span>новости</span></h2>
@@ -53,7 +57,7 @@
         </div>
     </section>
 
-    <!-- ГАЛЕРЕЯ (ТОЛЬКО ПРОСМОТР) -->
+    <!-- ГАЛЕРЕЯ -->
     <section class="gallery-section" id="gallery">
         <div class="container">
             <h2 class="section-title">Галерея <span>сервера</span></h2>
@@ -177,7 +181,6 @@
         </div>
     </div>
 
-    <!-- МОДАЛКА КОММЕНТАРИЕВ -->
     <div id="commentsModal" class="modal">
         <div class="modal-content" style="max-width: 600px;">
             <div class="modal-header">
