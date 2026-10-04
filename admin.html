@@ -3,61 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Админ-панель | BH Server</title>
+    <title>Админ-панель | BoecSMP</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <style>
-        body { padding: 2rem; }
+        body { padding: 2rem; background: var(--bg-primary); }
         .admin-container { max-width: 800px; margin: 0 auto; }
         .admin-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; margin-bottom: 2rem; }
         .admin-section h2 { margin-bottom: 1.5rem; color: var(--accent); }
         .form-group { margin-bottom: 1rem; }
-        .form-group label { display: block; color: var(--text-secondary); margin-bottom: 0.5rem; }
-        .form-group input { width: 100%; background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary); padding: 0.75rem; border-radius: 8px; }
+        .form-group label { display: block; color: var(--text-secondary); margin-bottom: 0.5rem; font-size: 0.9rem; }
+        .form-group input, .form-group textarea { width: 100%; background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary); padding: 0.75rem; border-radius: 8px; outline: none; font-family: inherit; }
+        .form-group input:focus, .form-group textarea:focus { border-color: var(--accent); }
         .promo-list { margin-top: 1rem; }
-        .promo-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: var(--bg-secondary); border-radius: 8px; margin-bottom: 0.5rem; }
-        .delete-btn { background: var(--error); color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; }
+        .promo-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: var(--bg-secondary); border-radius: 8px; margin-bottom: 0.5rem; border: 1px solid var(--border); }
+        .delete-btn { background: var(--error); color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-weight: 600; }
+        .delete-btn:hover { opacity: 0.9; }
+        #loginScreen { text-align: center; padding: 4rem 2rem; }
+        #loginScreen input { max-width: 300px; margin: 0 auto 1rem; }
+        #adminContent { display: none; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem; }
+        .stat-card { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; text-align: center; }
+        .stat-card .value { font-size: 2rem; font-weight: 800; color: var(--accent); }
+        .stat-card .label { color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.5rem; }
     </style>
 </head>
 <body>
-    <div class="admin-container">
-        <h1 style="text-align: center; margin-bottom: 2rem;">Админ-панель BH Server</h1>
-        
-        <!-- Управление промокодами -->
-        <div class="admin-section">
-            <h2>Промокоды</h2>
-            <div class="form-group">
-                <label>Название промокода</label>
-                <input type="text" id="adminPromoCode" placeholder="НАПРИМЕР: START5" style="text-transform: uppercase;">
-            </div>
-            <div class="form-group">
-                <label>Скидка (%)</label>
-                <input type="number" id="adminPromoDiscount" placeholder="5" min="1" max="99" value="5">
-            </div>
-            <button class="btn" onclick="createPromoCode()">Создать промокод</button>
+    <div id="loginScreen">
+        <h1 style="color: var(--accent); margin-bottom: 1rem;">🔒 Админ-панель</h1>
+        <p style="color: var(--text-secondary); margin-bottom: 2rem;">Введите пароль для доступа</p>
+        <input type="password" id="adminPassword" placeholder="Пароль" onkeypress="if(event.key==='Enter') login()">
+        <br>
+        <button class="btn" onclick="login()" style="max-width: 300px; margin: 0 auto;">Войти</button>
+        <p id="loginError" style="color: var(--error); margin-top: 1rem; display: none;">Неверный пароль!</p>
+    </div>
+
+    <div id="adminContent">
+        <div class="admin-container">
+            <h1 style="text-align: center; margin-bottom: 2rem; color: var(--text-primary);">Админ-панель <span style="color: var(--accent);">BoecSMP</span></h1>
             
-            <div class="promo-list" id="promoList"></div>
-        </div>
-        
-        <!-- Подтверждение донатов -->
-        <div class="admin-section">
-            <h2>Подтвердить донат (начислить комиссию)</h2>
-            <div class="form-group">
-                <label>Ник реферера</label>
-                <input type="text" id="adminReferralName" placeholder="STEVE">
+            <div class="admin-section">
+                <h2>📊 Общая статистика</h2>
+                <div class="stats-grid" id="adminStats">
+                    <div class="stat-card"><div class="value" id="statReferrals">0</div><div class="label">Рефералов</div></div>
+                    <div class="stat-card"><div class="value" id="statClicks">0</div><div class="label">Переходов</div></div>
+                    <div class="stat-card"><div class="value" id="statEarnings">0 ₽</div><div class="label">Выплачено</div></div>
+                    <div class="stat-card"><div class="value" id="statTransactions">0</div><div class="label">Донатов</div></div>
+                </div>
             </div>
-            <div class="form-group">
-                <label>Сумма доната (₽)</label>
-                <input type="number" id="adminDonationAmount" placeholder="143">
+            
+            <div class="admin-section">
+                <h2>🎫 Промокоды</h2>
+                <div class="form-group"><label>Название</label><input type="text" id="adminPromoCode" placeholder="START5" style="text-transform: uppercase;"></div>
+                <div class="form-group"><label>Скидка (%)</label><input type="number" id="adminPromoDiscount" placeholder="5" min="1" max="99" value="5"></div>
+                <button class="btn" onclick="createPromoCode()">Создать промокод</button>
+                <div class="promo-list" id="promoList"></div>
             </div>
-            <button class="btn" onclick="confirmDonation()">Подтвердить и начислить комиссию</button>
-        </div>
-        
-        <!-- Статистика -->
-        <div class="admin-section">
-            <h2>Общая статистика</h2>
-            <div id="adminStats"></div>
+            
+            <div class="admin-section">
+                <h2>✅ Подтвердить донат</h2>
+                <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">Укажите ник реферера и сумму для начисления 10% комиссии</p>
+                <div class="form-group"><label>Ник реферера</label><input type="text" id="adminReferralName" placeholder="STEVE"></div>
+                <div class="form-group"><label>Сумма доната (₽)</label><input type="number" id="adminDonationAmount" placeholder="143"></div>
+                <button class="btn" onclick="confirmDonation()">Подтвердить и начислить</button>
+                <div style="margin-top: 2rem;">
+                    <h3 style="color: var(--text-primary); margin-bottom: 1rem;">История донатов</h3>
+                    <div id="transactionsList" class="promo-list"></div>
+                </div>
+            </div>
+
+            <!-- Управление новостями -->
+            <div class="admin-section">
+                <h2>📰 Новости</h2>
+                <div class="form-group"><label>Заголовок</label><input type="text" id="adminNewsTitle" placeholder="Обновление 1.21.11"></div>
+                <div class="form-group"><label>Текст</label><textarea id="adminNewsContent" placeholder="Описание..." rows="4"></textarea></div>
+                <div class="form-group"><label>Картинка (URL)</label><input type="text" id="adminNewsImage" placeholder="https://..."></div>
+                <button class="btn" onclick="adminPublishNews()">Опубликовать новость</button>
+                <div style="margin-top: 2rem;">
+                    <h3 style="color: var(--text-primary); margin-bottom: 1rem;">Опубликованные новости</h3>
+                    <div id="adminNewsList" class="promo-list"></div>
+                </div>
+            </div>
+
+            <!-- Управление галереей -->
+            <div class="admin-section">
+                <h2>🖼️ Галерея</h2>
+                <div class="form-group"><label>Ссылка на изображение</label><input type="text" id="adminGalleryUrl" placeholder="https://..."></div>
+                <div class="form-group"><label>Подпись</label><input type="text" id="adminGalleryCaption" placeholder="Спавн сервера"></div>
+                <button class="btn" onclick="adminAddGallery()">Добавить в галерею</button>
+                <div style="margin-top: 2rem;">
+                    <h3 style="color: var(--text-primary); margin-bottom: 1rem;">Фото в галерее</h3>
+                    <div id="adminGalleryList" class="promo-list"></div>
+                </div>
+            </div>
         </div>
     </div>
 
