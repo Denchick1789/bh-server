@@ -6,7 +6,7 @@ const PRICES = [
     { days: "365 дней", price: 1487 }
 ];
 
-const ADMIN_CODE = "PERFARATOR1487";
+const ADMIN_CODE = "BIGBOB1488CHERTOLET";
 
 let activeDiscount = 0;
 let currentUser = null;
